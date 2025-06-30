@@ -436,57 +436,9 @@ st.markdown("""
         z-index: 100;
     }
     .main-content-wrapper {
-        padding-bottom: 120px;
+        padding-bottom: 120px; /* Increased padding to ensure input is not overlapped */
     }
-    .agent-dropdown-item {
-        padding: 12px 16px;
-        cursor: pointer;
-        border-bottom: 1px solid #F3F4F6;
-        display: flex;
-        align-items: center;
-        transition: background-color 0.2s ease;
-    }
-    .agent-dropdown-item:hover {
-        background-color: #F8FAFC;
-    }
-    .agent-dropdown-item:last-child {
-        border-bottom: none;
-    }
-    .agent-info {
-        display: flex;
-        align-items: center;
-        font-weight: 600;
-        color: #374151;
-        margin-bottom: 8px;
-        width: 100%;
-        justify-content: space-between;
-    }
-    .agent-questions-count {
-        font-size: 0.8rem;
-        color: #6B7280;
-        font-weight: normal;
-    }
-    .agent-questions {
-        margin-left: 38px;
-        margin-top: 8px;
-    }
-    .question-item {
-        padding: 8px 12px;
-        margin-bottom: 4px;
-        background-color: #F9FAFB;
-        border-radius: 8px;
-        cursor: pointer;
-        font-size: 0.9rem;
-        color: #4B5563;
-        transition: all 0.2s ease;
-        border-left: 3px solid transparent;
-        font-weight: normal;
-    }
-    .question-item:hover {
-        background-color: #E0F2FE;
-        border-left-color: #0EA5E9;
-        transform: translateX(3px);
-    }
+    /* Removed unused CSS classes: .agent-dropdown-item, .agent-info, .agent-questions-count, .agent-questions, .question-item */
     .real-time-agent {
         background: linear-gradient(45deg, #EFF6FF, #DBEAFE);
         border-left: 4px solid #3B82F6;
@@ -500,10 +452,48 @@ st.markdown("""
         background: linear-gradient(45deg, #F0FDF4, #DCFCE7);
         border-left: 4px solid #10B981;
     }
+    /* Styles for the new sidebar */
+    div[data-testid="stRadio"] > label > div[data-testid="stMarkdownContainer"] > p {
+        font-size: 1.1rem !important;
+        font-weight: 600 !important;
+    }
+    div[data-testid="stRadio"] > div[data-testid="stWidgetLabel"] { /* Hide the default st.radio label */
+        display: none;
+    }
+    div[data-testid="stRadio"] > div {
+        gap: 0.5rem !important; /* Adjust gap between radio items */
+    }
+    div[data-testid="stRadio"] label { /* Target individual radio items */
+        padding: 10px 12px !important;
+        border-radius: 8px !important;
+        margin-bottom: 5px !important; /* Space between items */
+        transition: background-color 0.3s ease, color 0.3s ease !important;
+        display: block !important; /* Make label take full width */
+        border: 1px solid transparent; /* For hover/selected effect */
+        cursor: pointer;
+    }
+    /* Style for the selected radio button */
+    div[data-testid="stRadio"] input[type="radio"]:checked + div {
+        background-color: #1E3A8A !important; /* Primary color */
+        color: white !important;
+        border-radius: 8px !important;
+    }
+    div[data-testid="stRadio"] input[type="radio"]:checked + div p {
+        color: white !important;
+    }
+    /* Hover effect for non-selected radio buttons */
+    div[data-testid="stRadio"] label:hover {
+        background-color: #E0F2FE !important; /* Light blue hover */
+    }
+    div[data-testid="stRadio"] label:hover p {
+        color: #1E3A8A !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
 # Initialize session state variables
+if 'active_tab' not in st.session_state:
+    st.session_state.active_tab = "Assist" # Default to Assist tab
 if 'messages' not in st.session_state:
     st.session_state.messages = []
 if 'charts' not in st.session_state:
@@ -524,41 +514,16 @@ if 'code_snippets' not in st.session_state:
     st.session_state.code_snippets = []
 if 'code_panel_open' not in st.session_state:
     st.session_state.code_panel_open = True
-if 'selected_question' not in st.session_state:
-    st.session_state.selected_question = ""
-if 'last_selected_agent' not in st.session_state:
-    st.session_state.last_selected_agent = "Select an Agent"
-if 'last_chosen_question' not in st.session_state:
-    st.session_state.last_chosen_question = "Select a Questions"
+# 'selected_question' is removed as its UI element (predefined questions dropdown) is gone.
+# 'last_selected_agent' and 'last_chosen_question' are removed as their UI elements are gone.
 if 'input_key' not in st.session_state:
     st.session_state.input_key = 0
 if 'current_active_agent' not in st.session_state:
     st.session_state.current_active_agent = None
 if 'agent_workflow_state' not in st.session_state:
     st.session_state.agent_workflow_state = {}
-
-# Define agents with their questions
-AGENTS_QUESTIONS = {
-    "Insights Agent": [
-        "What are the quarterly trends in total orders shipped from 2023 to 2025?",
-        "Can you identify the top 3 customers by total pallets shipped?",
-        "How does the average distance per shipment vary by product type?"
-    ],
-    "Dynamic Cost Optimizer": [
-        "How can we optimize daily delivery schedules in January 2025 based on demand?",
-        "Can we keep cost per order below £100 in 2025 through dynamic scheduling?",
-        "How can we dynamically adjust delivery schedules for TESCO in February 2025 to minimize costs?"
-    ],
-    "Static Cost Optimizer": [
-        "What savings result from maintaining 85% pallet utilization per truck?",
-        "What cost savings can be achieved by consolidating shipments to postcode EN every 5 days in 2024?"
-    ],
-    "Pallet Utilization Optimization Agent": [
-        "How many pallets were shipped in total for the product type \"AMBCONTROL\"?",
-        "Provide total cost per pallet shipped in 2024?",
-        "What is the average cost per pallet shipped 2024?"
-    ]
-}
+if 'search_query' not in st.session_state: # For search conversation bar
+    st.session_state.search_query = ""
 
 # Agent mapping for real workflow tracking
 AGENT_MAPPING = {
@@ -577,16 +542,18 @@ def clear_conversation():
     st.session_state.conversation_pairs = []
     st.session_state.processing_steps = []
     st.session_state.is_processing = False
-    st.session_state.thread_id = str(uuid.uuid4())
+    st.session_state.thread_id = str(uuid.uuid4()) # Reset thread_id for a new conversation context
     st.session_state.last_input = ""
     st.session_state.code_snippets = []
-    st.session_state.code_panel_open = True
+    # st.session_state.code_panel_open = True # Decided by user toggle, not reset
     st.session_state.selected_question = ""
-    st.session_state.last_selected_agent = "Select an Agent"
-    st.session_state.last_chosen_question = "Select a Questions"
+    # st.session_state.last_selected_agent = "Select an Agent" # Keep for assist page context
+    # st.session_state.last_chosen_question = "Select a Questions" # Keep for assist page context
     st.session_state.input_key += 1
     st.session_state.current_active_agent = None
     st.session_state.agent_workflow_state = {}
+    st.session_state.search_query = ""
+    # st.session_state.active_tab = "Assist" # Or your preferred default after clearing
 
 def display_header():
     """Display the application header with logo, title, and toggle button."""
@@ -598,56 +565,47 @@ def display_header():
         """, unsafe_allow_html=True)
     with col2:
         st.markdown('<div class="toggle-button-right">', unsafe_allow_html=True)
-        if st.button("📝 Code Analysis" if not st.session_state.code_panel_open else "✕ Hide Code", 
-                     key="toggle_code_panel",
-                     help="Toggle Code Analysis Panel",
-                     use_container_width=True):
-            st.session_state.code_panel_open = not st.session_state.code_panel_open
-            st.rerun()
+        if st.session_state.active_tab == "Assist": # Only show toggle on Assist page
+            if st.button("📝 Code Analysis" if not st.session_state.code_panel_open else "✕ Hide Code",
+                         key="toggle_code_panel",
+                         help="Toggle Code Analysis Panel",
+                         use_container_width=True):
+                st.session_state.code_panel_open = not st.session_state.code_panel_open
+                st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
 def display_sidebar():
-    """Display the sidebar with information and options."""
+    """Display the sidebar with navigation and options."""
     with st.sidebar:
-        st.markdown("## About")
-        st.markdown("""
-        This application provides insights and optimization recommendations for UK distribution operations.
-        ### Features:
-        - Cost optimization analysis
-        - Shipment consolidation recommendations
-        - Pallet utilization optimization
-        - Data-driven insights
-        """)
-        st.markdown("### Our Multi-Agent AI System")
-        agent_cols = st.columns([1, 3])
-        with agent_cols[0]:
-            st.markdown('<span class="agent-icon supervisor-icon">S</span>', unsafe_allow_html=True)
-        with agent_cols[1]:
-            st.markdown("**Supervisor**<br>Routes queries to specialized agents", unsafe_allow_html=True)
-        agent_cols = st.columns([1, 3])
-        with agent_cols[0]:
-            st.markdown('<span class="agent-icon optimizer-icon">D</span>', unsafe_allow_html=True)
-        with agent_cols[1]:
-            st.markdown("**Dynamic Optimizer**<br>Optimizes shipping costs dynamically", unsafe_allow_html=True)
-        agent_cols = st.columns([1, 3])
-        with agent_cols[0]:
-            st.markdown('<span class="agent-icon optimizer-icon">S</span>', unsafe_allow_html=True)
-        with agent_cols[1]:
-            st.markdown("**Static Optimizer**<br>Analyzes static cost savings", unsafe_allow_html=True)
-        agent_cols = st.columns([1, 3])
-        with agent_cols[0]:
-            st.markdown('<span class="agent-icon insights-icon">I</span>', unsafe_allow_html=True)
-        with agent_cols[1]:
-            st.markdown("**Insights**<br>Provides data analysis and visualizations", unsafe_allow_html=True)
-        agent_cols = st.columns([1, 3])
-        with agent_cols[0]:
-            st.markdown('<span class="agent-icon pallet-icon">P</span>', unsafe_allow_html=True)
-        with agent_cols[1]:
-            st.markdown("**Pallet Utilization**<br>Optimizes pallet configurations", unsafe_allow_html=True)
+        # Custom CSS for st.radio can be injected here or globally if preferred
+        # For simplicity, added some specific CSS for radio buttons in global CSS block
+
+        # st.image("path/to/your/logo.png", width=100) # Optional: Add a logo
+        st.markdown("<h1 style='text-align: center; margin-bottom: 1rem;'>Your App</h1>", unsafe_allow_html=True) # Placeholder for app name/logo
+
+        tabs = ["Discover", "Assist"]
+        # Get current index for radio button
+        try:
+            current_tab_index = tabs.index(st.session_state.active_tab)
+        except ValueError:
+            current_tab_index = 1 # Default to Assist if active_tab is somehow invalid
+
+        selected_tab = st.radio(
+            "MENU", # This label will be hidden by CSS if stWidgetLabel display:none is used
+            tabs,
+            key="sidebar_tabs",
+            index=current_tab_index,
+            # label_visibility="collapsed" # Use CSS to hide if more control needed
+        )
+        if selected_tab != st.session_state.active_tab:
+            st.session_state.active_tab = selected_tab
+            st.rerun()
+
         st.markdown("---")
-        if st.button("🗑️ Clear Conversation", use_container_width=True):
+        if st.button("🗑️ Clear Conversation", use_container_width=True, key="clear_conv_sidebar"):
             clear_conversation()
+            st.session_state.active_tab = "Assist" # Go to Assist tab after clearing
             st.rerun()
 
 def extract_code_from_message(message_content):
@@ -674,13 +632,36 @@ def display_code_panel():
         st.markdown('''
         <div class="no-code-message">
             <p>💻 No code snippets available yet</p>
-            <p>Ask a question that requires data analysis or visualization to see the code here!</p>
+            <p>Ask a question on the 'Assist' tab that requires data analysis or visualization to see the code here!</p>
         </div>
         ''', unsafe_allow_html=True)
         return
-    for i, pair in enumerate(st.session_state.conversation_pairs):
-        messages, charts, code_snippets = pair
-        if code_snippets:
+
+    # Filter conversation pairs based on search query if active
+    # This is a basic client-side filter. For large histories, server-side/DB search is better.
+    filtered_pairs = st.session_state.conversation_pairs
+    if st.session_state.get('search_query', ''):
+        query = st.session_state.search_query.lower()
+        filtered_pairs = [
+            pair for pair in st.session_state.conversation_pairs
+            if any(query in (msg.get("text","").lower() if isinstance(msg, dict) else msg.lower()) for msg in pair[0])
+        ]
+        if not filtered_pairs:
+            st.markdown('<p style="text-align:center; color: #6B7280;">No matching conversations found for your search.</p>', unsafe_allow_html=True)
+            return # Added return here
+
+    for i, pair_data in enumerate(filtered_pairs):
+        # Ensure pair_data is correctly unpacked
+        if len(pair_data) == 3:
+            messages, charts, code_snippets = pair_data
+        else:
+            # Fallback or error handling if structure is unexpected
+            # For example, if code_snippets might be missing from older data
+            messages, charts = pair_data[:2]
+            code_snippets = {} # Assume no code snippets if not present
+            # st.warning(f"Conversation pair {i+1} has unexpected structure.") # Optional warning
+
+        if code_snippets: # Check if code_snippets is not None and not empty
             st.markdown(f'''
             <div class="code-analysis-section">
                 <div class="code-analysis-header">
@@ -709,7 +690,7 @@ def display_code_panel():
                 </div>
                 ''', unsafe_allow_html=True)
                 st.code(code_snippets['visualization'], language='python')
-        else:
+        elif st.session_state.active_tab == "Assist": # Only show "No Code Generated" if on Assist tab and relevant
             st.markdown(f'''
             <div class="code-analysis-section">
                 <div class="code-analysis-header">
@@ -717,10 +698,11 @@ def display_code_panel():
                     Question {i+1} - No Code Generated
                 </div>
                 <div class="no-code-message" style="padding: 20px; margin: 10px 0;">
-                    <p style="margin: 0; font-size: 0.9rem;">This question didn't require code analysis</p>
+                    <p style="margin: 0; font-size: 0.9rem;">This question didn't require code analysis or no code was extracted.</p>
                 </div>
             </div>
             ''', unsafe_allow_html=True)
+
 
 def encode_image_to_base64(path):
     """Convert an image file to base64 string."""
@@ -731,25 +713,29 @@ def encode_image_to_base64(path):
         st.error(f"Error encoding image: {e}")
         return None
 
-def display_message(message: Dict[str, str], is_user: bool = False):
-    """Display a message in the chat interface."""
+def display_message(message_data: Any, is_user: bool = False):
+    """Display a message in the chat interface. Handles both string and dict."""
     if is_user:
-        st.markdown(f'<div class="user-message">You: {message}</div>', unsafe_allow_html=True)
+        # User message is expected to be a string (the question)
+        st.markdown(f'<div class="user-message">You: {message_data}</div>', unsafe_allow_html=True)
     else:
-        agent = message.get("agent", "System")
-        text = message.get("text", "")
-        icon_class = "supervisor-icon"
-        if "dynamic" in agent.lower():
-            icon_class = "optimizer-icon"
-        elif "static" in agent.lower():
-            icon_class = "optimizer-icon"
-        elif "insight" in agent.lower():
-            icon_class = "insights-icon"
-        elif "pallet" in agent.lower():
-            icon_class = "pallet-icon"
-        agent_icon = f'<span class="agent-icon {icon_class}">{agent[0].upper()}</span>'
-        st.markdown(f'<div class="agent-message">{agent_icon}<span class="agent-name">{agent}:</span> {text}</div>', 
+        # Agent message is expected to be a dict
+        agent = message_data.get("agent", "System")
+        text = message_data.get("text", "")
+
+        icon_class = AGENT_MAPPING.get(agent, {}).get("class", "supervisor-icon") # Default to supervisor
+        # More specific mapping if agent name from message_data doesn't directly match AGENT_MAPPING keys
+        if "dynamic" in agent.lower(): icon_class = "optimizer-icon"
+        elif "static" in agent.lower(): icon_class = "optimizer-icon"
+        elif "insight" in agent.lower(): icon_class = "insights-icon"
+        elif "pallet" in agent.lower(): icon_class = "pallet-icon"
+        elif "supervisor" in agent.lower(): icon_class = "supervisor-icon"
+
+        agent_icon_char = AGENT_MAPPING.get(agent, {}).get("icon", agent[0].upper() if agent else "S")
+
+        st.markdown(f'<div class="agent-message"><span class="agent-icon {icon_class}">{agent_icon_char}</span><span class="agent-name">{agent}:</span> {text}</div>',
                    unsafe_allow_html=True)
+
 
 def display_chart(chart_data: Dict[str, str]):
     """Display a chart from base64 encoded image data."""
@@ -758,10 +744,9 @@ def display_chart(chart_data: Dict[str, str]):
         if content:
             image_bytes = base64.b64decode(content)
             image = Image.open(io.BytesIO(image_bytes))
-            with st.container():
-                st.markdown('<div class="chart-container">', unsafe_allow_html=True)
-                st.image(image, use_container_width=400)
-                st.markdown('</div>', unsafe_allow_html=True)
+            # Make charts appear in the middle by controlling width
+            st.image(image, use_container_width=False, width=600) # Adjust width as needed
+            # Removed the chart-container div to let Streamlit handle centering better with width
     except Exception as e:
         st.error(f"Error displaying chart: {e}")
 
@@ -769,11 +754,12 @@ def process_query(question: str):
     """Process a user query and update the UI."""
     if not question.strip():
         return
-    st.session_state.messages.append({"text": question, "is_user": True})
+    # Append user message as a simple string for user, dict for agent
+    st.session_state.messages.append({"text": question, "is_user": True, "agent": "User"}) # Standardize message format
     st.session_state.is_processing = True
     st.session_state.processing_steps = []
-    st.session_state.last_input = ""
-    st.session_state.selected_question = ""
+    st.session_state.last_input = "" # Clear last input after processing
+    # st.session_state.selected_question = "" # Clear selected if used
     st.session_state.input_key += 1
     st.session_state.current_active_agent = None
     st.session_state.agent_workflow_state = {}
@@ -781,18 +767,31 @@ def process_query(question: str):
 
 def add_real_agent_step(agent_key: str, action: str, details: str = "", status: str = "active"):
     """Add a real agent processing step based on actual workflow."""
-    if agent_key not in AGENT_MAPPING:
-        return
-    
-    agent_info = AGENT_MAPPING[agent_key]
+    # Ensure agent_key is valid or map it
+    mapped_agent_key = agent_key.lower()
+    if mapped_agent_key not in AGENT_MAPPING:
+        # Try to infer from common names if not a direct key match
+        if "insights" in mapped_agent_key: mapped_agent_key = "insights_agent"
+        elif "dynamic" in mapped_agent_key: mapped_agent_key = "dynamic_cost_optimizer"
+        elif "static" in mapped_agent_key: mapped_agent_key = "static_cost_optimizer"
+        elif "pallet" in mapped_agent_key: mapped_agent_key = "pallet_utilization_agent"
+        elif "supervisor" in mapped_agent_key: mapped_agent_key = "supervisor"
+        else: # Fallback if no match
+            # st.warning(f"Unknown agent key for step: {agent_key}")
+            # Default to supervisor or a generic display
+            default_agent_info = {"name": agent_key, "icon": agent_key[0].upper() if agent_key else "?", "class": "supervisor-icon"}
+            agent_info = default_agent_info
+            step_class = "processing-agent" # Generic step class
+            # return # Optionally skip adding step for unknown agents
+
+    if mapped_agent_key in AGENT_MAPPING:
+        agent_info = AGENT_MAPPING[mapped_agent_key]
+        step_class = "processing-supervisor" if mapped_agent_key == "supervisor" else f"processing-{mapped_agent_key.split('_')[0]}"
+
     timestamp = time.strftime("%H:%M:%S")
-    
     status_class = f"status-{status}"
     status_text = status.upper()
-    
-    # Determine processing step class based on agent
-    step_class = "processing-supervisor" if agent_key == "supervisor" else f"processing-{agent_key.split('_')[0]}"
-    
+
     step_content = f"""
     <div class="agent-header">
         <span class="agent-icon {agent_info['class']}">{agent_info['icon']}</span>
@@ -805,39 +804,34 @@ def add_real_agent_step(agent_key: str, action: str, details: str = "", status: 
         {f'<br>{details}' if details else ''}
     </div>
     """
-    
+
     st.session_state.processing_steps.append({
         "type": step_class,
         "content": step_content,
         "timestamp": timestamp,
-        "agent": agent_key,
+        "agent": mapped_agent_key, # Use the mapped key
         "status": status
     })
-    
-    # Update current active agent
+
     if status == "active":
-        st.session_state.current_active_agent = agent_key
-    elif status == "complete" and st.session_state.current_active_agent == agent_key:
+        st.session_state.current_active_agent = mapped_agent_key
+    elif status == "complete" and st.session_state.current_active_agent == mapped_agent_key:
         st.session_state.current_active_agent = None
 
 def display_processing_steps(container):
     """Display all processing steps with real agent workflow."""
     for step in st.session_state.processing_steps:
-        step_type = step["type"]
+        step_type_class = step.get("type", "processing-agent") # Default class
         content = step["content"]
         timestamp = step.get("timestamp", time.strftime("%H:%M:%S"))
-        
-        # Add real-time animation for active agents
+
         animation_class = ""
-        if step.get("status") == "active":
-            animation_class = " real-time-agent"
-        elif step.get("status") == "thinking":
-            animation_class = " agent-thinking"
-        elif step.get("status") == "responding":
-            animation_class = " agent-responding"
-            
+        if step.get("status") == "active": animation_class = " real-time-agent"
+        elif step.get("status") == "thinking": animation_class = " agent-thinking"
+        elif step.get("status") == "responding": animation_class = " agent-responding"
+
         container.markdown(
-            f'<div class="processing-step {step_type}{animation_class}">{content}<span class="step-timestamp">{timestamp}</span></div>', 
+            f'<div class="processing-step {step_type_class}{animation_class}">{content}<span class="step-timestamp">{timestamp}</span></div>',
             unsafe_allow_html=True
         )
 
@@ -850,7 +844,7 @@ def display_progress_bar(container, progress: float, status_text: str = ""):
         </div>
         <div class="progress-status">
             <div>{status_text}</div>
-            <div class="progress-percentage">{progress}%</div>
+            <div class="progress-percentage">{int(progress)}%</div>
         </div>
     </div>
     """
@@ -864,470 +858,592 @@ def load_data():
         insights_df = pd.read_csv(INSIGHTS_DATA_PATH)
         sku_master = pd.read_csv(SKU_MASTER_PATH)
         return shipment_df, rate_card, insights_df, sku_master
+    except FileNotFoundError as e:
+        st.error(f"Data file not found: {e}. Please check config.py and ensure data files are present.")
+        return None, None, None, None
     except Exception as e:
         st.error(f"Error loading data: {e}")
         return None, None, None, None
 
 def delete_conversation_for_thread_and_user(thread_id, user_id):
     """Delete conversation documents from MongoDB."""
-    MONGODB_URI = "mongodb+srv://akshatasb0108:0u6NVe68ucJr4fP8@clusterai.lnrva2k.mongodb.net/?retryWrites=true&w=majority&appName=clusterai"
-    DB_NAME = "checkpointing_db"
-    client = MongoClient(MONGODB_URI)
-    db = client[DB_NAME]
-    collection = db["checkpoints_aio"]
-    query = {
-        "thread_id": thread_id,
-        "metadata.user_id": bytes(f'"{user_id}"', 'utf-8')
-    }
-    result = collection.delete_many(query)
-    st.write(f"Deleted {result.deleted_count} documents.")
+    # Ensure these are loaded from .env or config
+    MONGODB_URI = os.getenv("MONGODB_URI", "mongodb+srv://akshatasb0108:0u6NVe68ucJr4fP8@clusterai.lnrva2k.mongodb.net/?retryWrites=true&w=majority&appName=clusterai")
+    DB_NAME = os.getenv("MONGODB_DB_NAME", "checkpointing_db")
+    if not MONGODB_URI:
+        st.error("MongoDB URI not configured.")
+        return
+    try:
+        client = MongoClient(MONGODB_URI)
+        db = client[DB_NAME]
+        collection = db["checkpoints_aio"] # Collection name from LangGraph
+        query = {
+            "thread_id": thread_id,
+            # "metadata.user_id": user_id # Assuming user_id is stored directly in metadata
+            # LangGraph stores user_id inside metadata like: {'configurable': {'user_id': 'my_user'}}
+            # The exact path might depend on how user_id is structured in your LangGraph config
+            # For AsyncMongoDBSaver, it's often part of the thread_id or config.
+            # Let's assume thread_id is sufficient if user_id is embedded or not used for deletion this way.
+        }
+        # If user_id is indeed in metadata.user_id as bytes:
+        # query["metadata.user_id"] = bytes(f'"{user_id}"', 'utf-8') # Original way
+
+        # Simpler deletion by thread_id if that's how checkpointer is configured primarily
+        result = collection.delete_many(query)
+        st.toast(f"Deleted {result.deleted_count} conversation segments from database for current session.", icon="🗑️")
+    except Exception as e:
+        st.error(f"Error deleting conversation from database: {e}")
+
 
 async def process_agent_query(question: str, thread_id: str, user_id: str, llm, shipment_df, rate_card, insights_df, sku_master):
     """Process query through multi-agent graph with real workflow tracking."""
-    MONGODB_URI = "mongodb+srv://akshatasb0108:0u6NVe68ucJr4fP8@clusterai.lnrva2k.mongodb.net/?retryWrites=true&w=majority&appName=clusterai"
-    DB_NAME = "checkpointing_db"
-    
+    MONGODB_URI = os.getenv("MONGODB_URI", "mongodb+srv://akshatasb0108:0u6NVe68ucJr4fP8@clusterai.lnrva2k.mongodb.net/?retryWrites=true&w=majority&appName=clusterai")
+    DB_NAME = os.getenv("MONGODB_DB_NAME", "checkpointing_db")
+
+    if not MONGODB_URI:
+        yield {"event": "error", "message": "MongoDB URI not configured."}
+        return
+
     async with AsyncMongoDBSaver.from_conn_string(MONGODB_URI, db_name=DB_NAME) as checkpointer:
-        multi_agent_graph = await create_agent_graph(
-            llm=llm,
-            shipment_df=shipment_df,
-            rate_card=rate_card,
-            insights_df=insights_df,
-            SKU_master=sku_master,
-            checkpointer=checkpointer
-        )
-        
-        config = {"configurable": {"thread_id": thread_id, "user_id": user_id}}
-        state = {
-            "messages": [HumanMessage(content=question)],
-            "next": "supervisor",
-            "visual_outputs": [],
-            "current_agent": None,
-            "metadata": {},
-            "parameters": None
-        }
-        
-        if question.lower() == "erase memory":
-            delete_conversation_for_thread_and_user(thread_id, user_id)
-            yield {
-                "event": "agent_step",
-                "agent": "supervisor",
-                "action": "Memory Cleared",
-                "details": f"Deleted thread_id: {thread_id} and user_id: {user_id}",
-                "status": "complete"
-            }
-            yield {
-                "event": "message",
-                "agent": "System",
-                "text": f"Deleted current `thread_id`: {thread_id} and `user_id`: {user_id} from database..!"
-            }
-            yield {
-                "event": "final_response",
-                "status": "success"
-            }
+        try:
+            multi_agent_graph = await create_agent_graph(
+                llm=llm,
+                shipment_df=shipment_df,
+                rate_card=rate_card,
+                insights_df=insights_df,
+                SKU_master=sku_master,
+                checkpointer=checkpointer
+            )
+        except Exception as e:
+            yield {"event": "error", "message": f"Failed to create agent graph: {str(e)}"}
             return
-        
-        # Track the workflow state
-        current_step = 0
-        total_steps = 0
-        
-        async for current_state in multi_agent_graph.astream(state, config):
-            if isinstance(current_state, dict):
-                # Extract the current node/agent from the state
-                node_name = list(current_state.keys())[0] if current_state else "unknown"
-                section = list(current_state.values())[0] if current_state else {}
-                
-                # Map node names to our agent keys
-                agent_key = "supervisor"
-                if "insights" in node_name.lower():
-                    agent_key = "insights_agent"
-                elif "dynamic" in node_name.lower():
-                    agent_key = "dynamic_cost_optimizer"
-                elif "static" in node_name.lower():
-                    agent_key = "static_cost_optimizer"
-                elif "pallet" in node_name.lower():
-                    agent_key = "pallet_utilization_agent"
-                
-                # Update workflow state
-                if 'next' in current_state:
-                    state['next'] = current_state['next']
-                if 'parameters' in current_state:
-                    state['parameters'] = current_state['parameters']
-                
-                # Emit agent step event
-                if section and 'messages' in section and section['messages']:
-                    message = section['messages'][0]
-                    content = message.content
-                    name = message.name or "System"
-                    
-                    # Determine action based on content
-                    action = "Processing Query"
-                    if "analyzing" in content.lower():
-                        action = "Analyzing Data"
-                    elif "calculating" in content.lower():
-                        action = "Performing Calculations"
-                    elif "generating" in content.lower():
-                        action = "Generating Response"
-                    elif "optimizing" in content.lower():
-                        action = "Optimizing Parameters"
-                    
-                    yield {
-                        "event": "agent_step",
-                        "agent": agent_key,
-                        "action": action,
-                        "details": f"Processing: {content[:100]}..." if len(content) > 100 else content,
-                        "status": "active"
-                    }
-                    
-                    # Emit message event
-                    yield {
-                        "event": "message",
-                        "agent": name,
-                        "text": content
-                    }
-                    
-                    # Mark agent as complete
-                    yield {
-                        "event": "agent_step",
-                        "agent": agent_key,
-                        "action": "Task Completed",
-                        "details": "Response generated successfully",
-                        "status": "complete"
-                    }
-                
-                # Handle visual outputs
-                if state.get('visual_outputs'):
-                    for path in state['visual_outputs']:
+
+        config = {"configurable": {"thread_id": thread_id, "user_id": user_id}}
+        # Initial state for the graph
+        initial_graph_state = {
+            "messages": [HumanMessage(content=question)],
+            # "next": "supervisor", # 'next' might be managed internally by the graph structure
+            # "visual_outputs": [], # Ensure this is part of your graph's state schema if used
+            # "current_agent": None,
+            # "metadata": {},
+            # "parameters": None
+        }
+
+        if question.lower() == "erase memory":
+            # This deletion should ideally happen before graph interaction if it's a command
+            # For now, keeping it as a special case handled by the agent query processor
+            delete_conversation_for_thread_and_user(thread_id, user_id) # This is synchronous
+            yield {
+                "event": "agent_step", "agent": "supervisor", "action": "Memory Cleared",
+                "details": f"Requested memory erasure for thread_id: {thread_id}", "status": "complete"
+            }
+            yield {"event": "message", "agent": "System", "text": f"Memory for session {thread_id} has been cleared."}
+            yield {"event": "final_response", "status": "success"}
+            return
+
+        current_visual_outputs = [] # Temp store for visual outputs from state
+
+        async for event_part in multi_agent_graph.astream_events(initial_graph_state, config, version="v1"):
+            kind = event_part["event"]
+            tags = event_part.get("tags", [])
+            name = event_part.get("name", "") # Name of the node/agent
+
+            if kind == "on_chat_model_stream":
+                chunk = event_part["data"]["chunk"]
+                if chunk.content:
+                    # This gives raw token stream. We might want to aggregate for display.
+                    # For now, let's assume higher-level events handle full messages.
+                    pass
+            elif kind == "on_tool_end": # Example: if tools generate charts
+                if event_part["data"].get("outputs") and "visual_outputs" in event_part["data"]["outputs"]:
+                    for path in event_part["data"]["outputs"]["visual_outputs"]:
                         image_base64 = encode_image_to_base64(path)
                         if image_base64:
-                            yield {
-                                "event": "chart",
-                                "content": image_base64
-                            }
-                            state['visual_outputs'].remove(path)
-        
-        yield {
-            "event": "final_response",
-            "status": "success"
-        }
+                            yield {"event": "chart", "content": image_base64}
+                            if os.path.exists(path): os.remove(path) # Clean up temp image file
+
+            elif kind == "on_chain_end" or kind == "on_llm_end": # More relevant for agent steps
+                # Determine agent key from name or tags
+                agent_key_inferred = name.lower() # Default to node name
+                if "supervisor" in agent_key_inferred: agent_key_inferred = "supervisor"
+                elif "insights" in agent_key_inferred: agent_key_inferred = "insights_agent"
+                elif "dynamic" in agent_key_inferred: agent_key_inferred = "dynamic_cost_optimizer"
+                elif "static" in agent_key_inferred: agent_key_inferred = "static_cost_optimizer"
+                elif "pallet" in agent_key_inferred: agent_key_inferred = "pallet_utilization_agent"
+                else: # Try to get from tags if available
+                    for tag in tags:
+                        if tag.startswith("agent:"):
+                            agent_key_inferred = tag.split(":")[1]
+                            break
+
+                outputs = event_part["data"].get("output", {})
+                messages = []
+                if isinstance(outputs, dict):
+                    messages = outputs.get("messages", [])
+                elif isinstance(outputs, list) and all(isinstance(m, HumanMessage) for m in outputs): # if output is list of messages
+                    messages = outputs
+
+                if messages:
+                    last_message = messages[-1] # Process the last message from the node
+                    content = last_message.content
+                    agent_name_from_msg = getattr(last_message, 'name', agent_key_inferred) # Use name if available in message
+
+                    yield {
+                        "event": "agent_step", "agent": agent_key_inferred,
+                        "action": f"Processing via {name}",
+                        "details": f"Node '{name}' completed.", "status": "active" # Intermediate step
+                    }
+                    # Check for visual outputs directly in message if structured that way
+                    # This part depends heavily on how your graph passes visual output paths
+                    if hasattr(last_message, 'additional_kwargs') and last_message.additional_kwargs.get('visual_outputs'):
+                        for path in last_message.additional_kwargs['visual_outputs']:
+                            image_base64 = encode_image_to_base64(path)
+                            if image_base64:
+                                yield {"event": "chart", "content": image_base64}
+                                if os.path.exists(path): os.remove(path) # Clean up
+
+                    yield {"event": "message", "agent": agent_name_from_msg or agent_key_inferred, "text": content}
+                    yield {
+                        "event": "agent_step", "agent": agent_key_inferred,
+                        "action": "Task Completed",
+                        "details": f"Node '{name}' finished generating response.", "status": "complete"
+                    }
+
+        # Check for visual_outputs in the final state if your graph accumulates them
+        final_state = await multi_agent_graph.ainvoke(initial_graph_state, config)
+        if final_state and isinstance(final_state, dict):
+            final_visual_outputs = final_state.get("visual_outputs", [])
+            if isinstance(final_visual_outputs, list): # Ensure it's a list
+                for path in final_visual_outputs:
+                    if path not in current_visual_outputs: # Avoid duplicates if handled by stream
+                        image_base64 = encode_image_to_base64(path)
+                        if image_base64:
+                            yield {"event": "chart", "content": image_base64}
+                            if os.path.exists(path): os.remove(path)
+            # Extract final message if not already streamed
+            final_messages = final_state.get("messages", [])
+            if final_messages:
+                # This logic might be redundant if on_chain_end captures all messages.
+                # Verify based on actual graph behavior.
+                pass
+
+
+        yield {"event": "final_response", "status": "success"}
+
 
 async def stream_agent_response(question, thread_id, user_id, llm, shipment_df, rate_card, insights_df, sku_master, process_container, progress_container, chat_container):
     """Helper function to handle async streaming of agent responses with real workflow tracking."""
-    new_messages = []
-    new_charts = []
+    new_messages_for_pair = [] # Only agent messages for the current pair
+    new_charts_for_pair = []
     conversation_code_snippets = {}
-    progress = 10
-    
+    progress = 10 # Initial progress
+
     try:
         async for event in process_agent_query(
-            question=question,
-            thread_id=thread_id,
-            user_id=user_id,
-            llm=llm,
-            shipment_df=shipment_df,
-            rate_card=rate_card,
-            insights_df=insights_df,
-            sku_master=sku_master
+            question=question, thread_id=thread_id, user_id=user_id, llm=llm,
+            shipment_df=shipment_df, rate_card=rate_card, insights_df=insights_df, sku_master=sku_master
         ):
+            if event["event"] == "error":
+                st.error(event["message"])
+                # Add error step to UI
+                add_real_agent_step("supervisor", "System Error", event["message"], "error")
+                display_processing_steps(process_container) # Update UI
+                return [], [], {}, f"Error: {event['message']}", "error"
+
             if event["event"] == "agent_step":
-                # Add real agent workflow step
                 add_real_agent_step(
                     agent_key=event.get("agent", "supervisor"),
                     action=event.get("action", "Processing"),
                     details=event.get("details", ""),
                     status=event.get("status", "active")
                 )
-                
-                # Update progress based on agent activity
-                if event.get("status") == "active":
-                    progress += 5
-                elif event.get("status") == "complete":
-                    progress += 10
-                
-                # Display updated steps
-                display_processing_steps(process_container)
-                display_progress_bar(progress_container, min(progress, 90), f"Agent: {AGENT_MAPPING.get(event.get('agent', 'supervisor'), {}).get('name', 'Unknown')} - {event.get('action', 'Processing')}")
-                
+                if event.get("status") == "active": progress = min(progress + 15, 85)
+                elif event.get("status") == "complete": progress = min(progress + 10, 90)
+
+                # This can cause a lot of rerenders. Consider batching updates or using st.empty for parts.
+                # For now, direct update:
+                with process_container: # Assuming process_container is an st.empty() or similar
+                    display_processing_steps(st.session_state.processing_steps) # Display all steps so far
+                with progress_container:
+                     display_progress_bar(progress, f"Agent: {AGENT_MAPPING.get(event.get('agent','supervisor'),{}).get('name','System')} - {event.get('action','Working')}")
+
+
             elif event["event"] == "message":
                 message_text = event.get("text", "")
                 clean_message, code_snippets = extract_code_from_message(message_text)
-                conversation_code_snippets.update(code_snippets)
-                
-                message_obj = {
-                    "text": clean_message,
-                    "agent": event.get("agent", "System"),
-                    "is_user": False
-                }
-                st.session_state.messages.append(message_obj)
-                new_messages.append(message_obj)
-                
-                with chat_container:
-                    display_message(message_obj)
-                
-                progress += 5
-                display_progress_bar(progress_container, min(progress, 90), f"Response from {message_obj['agent']}")
-                
+                conversation_code_snippets.update(code_snippets) # Collect all code snippets
+
+                message_obj = {"text": clean_message, "agent": event.get("agent", "System"), "is_user": False}
+                st.session_state.messages.append(message_obj) # Append to global messages
+                new_messages_for_pair.append(message_obj) # Append to current pair's messages
+
+                with chat_container: # Assuming chat_container is main chat area
+                    display_message(message_obj) # Display immediately
+
+                progress = min(progress + 10, 90)
+                with progress_container:
+                    display_progress_bar(progress, f"Response from {message_obj['agent']}")
+
             elif event["event"] == "chart":
-                chart_data = event.get("content", "")
-                new_charts.append({"content": chart_data})
-                st.session_state.charts.append({"content": chart_data})
-                
-                with chat_container:
-                    display_chart({"content": chart_data})
-                
-                progress += 5
-                display_progress_bar(progress_container, min(progress, 90), "Rendering visualization...")
-                
+                chart_content = event.get("content", "")
+                chart_obj = {"content": chart_content}
+                st.session_state.charts.append(chart_obj) # Append to global charts
+                new_charts_for_pair.append(chart_obj) # Append to current pair's charts
+
+                with chat_container: # Display chart immediately
+                    display_chart(chart_obj)
+
+                progress = min(progress + 5, 90) # Smaller increment for charts
+                with progress_container:
+                    display_progress_bar(progress, "Rendering visualization...")
+
             elif event["event"] == "final_response":
-                status_text = "Analysis Complete!" if event.get("status") == "success" else "Error occurred"
-                state = "complete" if event.get("status") == "success" else "error"
-                return new_messages, new_charts, conversation_code_snippets, status_text, state
-                
+                status_text = "Analysis Complete!" if event.get("status") == "success" else "Processing Error"
+                final_state = "complete" if event.get("status") == "success" else "error"
+                # Ensure supervisor marks completion
+                add_real_agent_step("supervisor", "Workflow Complete", "All tasks processed.", final_state)
+                with process_container:
+                    display_processing_steps(st.session_state.processing_steps)
+                with progress_container:
+                    display_progress_bar(100, status_text)
+
+                return new_messages_for_pair, new_charts_for_pair, conversation_code_snippets, status_text, final_state
+
     except Exception as e:
-        error_message = f"Error processing query: {str(e)}"
-        message_obj = {
-            "text": error_message,
-            "agent": "System",
-            "is_user": False
-        }
-        st.session_state.messages.append(message_obj)
-        new_messages.append(message_obj)
-        
-        with chat_container:
-            display_message(message_obj)
-            
-        # Add error step
-        add_real_agent_step("supervisor", "Error Occurred", str(e), "error")
-        display_processing_steps(process_container)
-        
-        return new_messages, new_charts, conversation_code_snippets, "Error occurred", "error"
+        st.error(f"Critical error during agent response streaming: {str(e)}")
+        error_message_obj = {"text": f"System Error: {str(e)}", "agent": "System", "is_user": False}
+        # Add to global and current pair messages
+        st.session_state.messages.append(error_message_obj)
+        new_messages_for_pair.append(error_message_obj)
+
+        with chat_container: display_message(error_message_obj)
+        add_real_agent_step("supervisor", "Critical Error", str(e), "error")
+        with process_container: display_processing_steps(st.session_state.processing_steps)
+        with progress_container: display_progress_bar(100, "Critical Error Occurred") # Show 100% on error to stop spinner
+        return new_messages_for_pair, new_charts_for_pair, conversation_code_snippets, "Critical Error Occurred", "error"
+
+    # Fallback if loop finishes without final_response (should not happen with robust agent_query)
+    add_real_agent_step("supervisor", "Workflow Ended", "Processing finished.", "complete")
+    with process_container: display_processing_steps(st.session_state.processing_steps)
+    with progress_container: display_progress_bar(100, "Processing Ended")
+    return new_messages_for_pair, new_charts_for_pair, conversation_code_snippets, "Processing Ended", "complete"
+
 
 def stream_response():
     """Stream the response from the multi-agent system with real workflow tracking."""
     if st.session_state.is_processing:
-        with st.status("Processing Query in Multi-Agent System...", expanded=True) as status:
-            process_container = st.empty()
-            progress_container = st.empty()
-            chat_container = st.container()
-            
-            # Get the last user message
-            last_user_message_obj = None
-            for msg in reversed(st.session_state.messages):
-                if msg.get("is_user", False):
-                    last_user_message_obj = msg
-                    break
-            
-            if last_user_message_obj:
-                with chat_container:
-                    st.markdown(f'<div class="conversation-pair">', unsafe_allow_html=True)
-                    st.markdown(f'''
-                    <div style="margin-bottom: 15px;">
-                        <span class="question-number">{len(st.session_state.conversation_pairs) + 1}</span>
-                        <span style="font-weight: 600; color: #374151;">Question {len(st.session_state.conversation_pairs) + 1}</span>
-                    </div>
-                    ''', unsafe_allow_html=True)
-                    display_message(last_user_message_obj["text"], is_user=True)
-            
-            # Initialize system
-            display_progress_bar(progress_container, 5, "Initializing multi-agent system...")
-            add_real_agent_step("supervisor", "System Initialization", "Setting up multi-agent workflow", "active")
-            display_processing_steps(process_container)
-            
-            # Get API key and initialize
-            api_key = os.getenv("OPENAI_API_KEY")
-            if not api_key:
-                st.error("OPENAI_API_KEY not found")
-                status.update(label="Error occurred", state="error")
-                st.session_state.is_processing = False
-                st.rerun()
-            
-            try:
-                llm = get_supervisor_llm(api_key)
-            except ValueError as e:
-                st.error(f"Invalid API Key: {e}")
-                status.update(label="Error occurred", state="error")
-                st.session_state.is_processing = False
-                st.rerun()
-            
-            # Load data
-            add_real_agent_step("supervisor", "Loading Data", "Accessing shipment and rate data", "active")
-            display_processing_steps(process_container)
-            display_progress_bar(progress_container, 10, "Loading data...")
-            
-            shipment_df, rate_card, insights_df, sku_master = load_data()
-            if shipment_df is None:
-                st.error("Failed to load data")
-                add_real_agent_step("supervisor", "Data Loading Failed", "Could not access required data files", "error")
-                display_processing_steps(process_container)
-                status.update(label="Error occurred", state="error")
-                st.session_state.is_processing = False
-                st.rerun()
-            
-            add_real_agent_step("supervisor", "Data Loaded Successfully", "All required data files loaded", "complete")
-            display_processing_steps(process_container)
-            
-            # Run the async streaming logic with real workflow tracking
-            new_messages, new_charts, conversation_code_snippets, status_text, state = asyncio.run(
-                stream_agent_response(
-                    question=last_user_message_obj["text"],
-                    thread_id=st.session_state.thread_id,
-                    user_id=st.session_state.user_id,
-                    llm=llm,
-                    shipment_df=shipment_df,
-                    rate_card=rate_card,
-                    insights_df=insights_df,
-                    sku_master=sku_master,
-                    process_container=process_container,
-                    progress_container=progress_container,
-                    chat_container=chat_container
-                )
+        # Use st.expander for collapsable processing details
+        with st.expander("🤖 Agent Activity Log...", expanded=True):
+            process_container = st.container() # For individual steps
+            progress_container = st.container() # For progress bar
+
+        # Main chat area for messages and charts (outside the expander)
+        chat_display_area = st.container()
+
+        last_user_message_obj = None
+        # Find the last actual user message to process
+        for msg_info in reversed(st.session_state.messages):
+            if msg_info.get("is_user"):
+                last_user_message_obj = msg_info
+                break
+
+        if not last_user_message_obj:
+            st.warning("No user query found to process.")
+            st.session_state.is_processing = False
+            return # Or st.rerun() if appropriate
+
+        # Display user's question immediately in the chat area (if not already part of conversation_pairs)
+        # This depends on whether process_query adds it to a displayable list or if stream_response should.
+        # For now, assume conversation_pairs handles prior messages.
+
+        # Initialize UI for processing
+        with progress_container: display_progress_bar(5, "Initializing multi-agent system...")
+        with process_container:
+            st.session_state.processing_steps = [] # Clear steps for new query
+            add_real_agent_step("supervisor", "System Initialization", "Setting up workflow", "active")
+            display_processing_steps(st.session_state.processing_steps) # Show initial step
+
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            st.error("OPENAI_API_KEY not found in environment.")
+            add_real_agent_step("supervisor", "Config Error", "OpenAI API Key missing.", "error")
+            with process_container: display_processing_steps(st.session_state.processing_steps)
+            st.session_state.is_processing = False
+            return
+
+        try:
+            llm = get_supervisor_llm(api_key)
+        except ValueError as e: # Assuming get_supervisor_llm might raise this for bad key
+            st.error(f"Invalid API Key: {e}")
+            add_real_agent_step("supervisor", "Config Error", f"Invalid API Key: {e}", "error")
+            with process_container: display_processing_steps(st.session_state.processing_steps)
+            st.session_state.is_processing = False
+            return
+
+        with process_container:
+            add_real_agent_step("supervisor", "Loading Data", "Accessing datasets", "active")
+            display_processing_steps(st.session_state.processing_steps)
+        with progress_container: display_progress_bar(10, "Loading data...")
+
+        shipment_df, rate_card, insights_df, sku_master = load_data()
+        if shipment_df is None: # load_data now handles st.error
+            add_real_agent_step("supervisor", "Data Loading Failed", "Required data files missing or corrupt.", "error")
+            with process_container: display_processing_steps(st.session_state.processing_steps)
+            st.session_state.is_processing = False
+            return
+
+        with process_container:
+            add_real_agent_step("supervisor", "Data Loaded", "Datasets ready for analysis.", "complete")
+            display_processing_steps(st.session_state.processing_steps)
+
+        # Run async streaming
+        new_agent_messages, new_charts, conversation_code_snippets, status_text, final_state = asyncio.run(
+            stream_agent_response(
+                question=last_user_message_obj["text"], # Pass only the text
+                thread_id=st.session_state.thread_id,
+                user_id=st.session_state.user_id,
+                llm=llm,
+                shipment_df=shipment_df, rate_card=rate_card, insights_df=insights_df, sku_master=sku_master,
+                process_container=process_container, # For steps
+                progress_container=progress_container, # For progress bar
+                chat_container=chat_display_area # For messages and charts
             )
-            
-            # Store conversation pair
-            if last_user_message_obj:
-                st.session_state.conversation_pairs.append((
-                    [last_user_message_obj] + new_messages,
-                    new_charts,
-                    conversation_code_snippets
-                ))
-            else:
-                st.session_state.conversation_pairs.append((
-                    new_messages,
-                    new_charts,
-                    conversation_code_snippets
-                ))
-            
-            # Final completion step
-            add_real_agent_step("supervisor", "Workflow Complete", "All agents have completed their tasks", "complete")
-            display_processing_steps(process_container)
-            display_progress_bar(progress_container, 100, "Response ready!")
-            
-            status.update(label=status_text, state=state)
-        
+        )
+
+        # After streaming, update conversation_pairs with the full exchange
+        # The user message is already in st.session_state.messages
+        # We need to form the pair: (list_of_all_messages_for_this_turn, list_of_charts_for_this_turn, code_snippets_for_this_turn)
+        # The user message that triggered this is last_user_message_obj
+
+        current_turn_messages = [last_user_message_obj] + new_agent_messages
+        st.session_state.conversation_pairs.append((
+            current_turn_messages,
+            new_charts, # Charts from this turn
+            conversation_code_snippets # Code from this turn
+        ))
+
         st.session_state.is_processing = False
+        # No st.rerun() here, let Streamlit flow naturally after async finishes.
+        # The UI should have updated progressively. A final rerun might be needed if elements are not updating.
+        # Forcing a rerun to ensure UI consistency after all async operations.
         st.rerun()
 
+
 def display_fixed_input_area():
-    """Display the fixed input area at the bottom."""
-    input_container = st.container()
-    with input_container:
-        col_agent, col_question = st.columns([1, 3])
-        
-        with col_agent:
-            agent_options = ["Select an Agent"] + list(AGENTS_QUESTIONS.keys())
-            agent_index = agent_options.index(st.session_state.last_selected_agent)
-            selected_agent = st.selectbox(
-                "Agents",
-                agent_options,
-                index=agent_index,
-                key="agent_selector_input",
-                label_visibility="collapsed"
-            )
-        
-        if selected_agent != st.session_state.last_selected_agent:
-            st.session_state.last_selected_agent = selected_agent
-            st.session_state.last_chosen_question = "Select a Question"
-            st.session_state.selected_question = ""
-            st.rerun()
-        
-        with col_question:
-            questions_list = ["Select a Question"]
-            if selected_agent != "Select an Agent":
-                questions_list.extend(AGENTS_QUESTIONS[selected_agent])
-            
-            question_index = 0
-            if st.session_state.last_chosen_question in questions_list:
-                question_index = questions_list.index(st.session_state.last_chosen_question)
-            
-            chosen_question = st.selectbox(
-                "Predefined Questions",
-                questions_list,
-                index=question_index,
-                key="question_selector_input",
-                label_visibility="collapsed"
-            )
-        
-        if chosen_question != st.session_state.last_chosen_question:
-            st.session_state.last_chosen_question = chosen_question
-            if chosen_question != "Select a Question":
-                st.session_state.selected_question = chosen_question
-            else:
-                st.session_state.selected_question = ""
-            st.rerun()
-        
-        with st.form(key="input_form", clear_on_submit=True):
-            col_input, col_button = st.columns([10, 1])
-            
-            with col_input:
-                user_input = st.text_input(
-                    "Ask a question",
-                    value=st.session_state.selected_question,
-                    placeholder="Select a question above or type your own here...",
-                    key=f"main_input_{st.session_state.input_key}",
-                    label_visibility="collapsed"
-                )
-            
-            with col_button:
-                submit_clicked = st.form_submit_button("⮞", use_container_width=True)
-            
-            if submit_clicked and user_input:
-                process_query(user_input)
-                st.session_state.selected_question = ""
-                st.session_state.last_chosen_question = "Select a Question"
+    """Display the fixed input area at the bottom for the Assist page."""
+    # This input area will be styled with CSS to be fixed at the bottom right.
+    # For simplicity in Streamlit, we'll place it at the bottom of the main flow.
+    # True fixed positioning often requires more complex HTML/CSS injection.
+
+    st.markdown("""
+    <div class="fixed-input-container-wrapper">
+        <div class="fixed-input-container">
+    """, unsafe_allow_html=True)
+
+    # The form helps manage input submission
+    with st.form(key="logistic_chat_form", clear_on_submit=True):
+        user_input = st.text_input(
+            "Type your message to Logistic Chat...",
+            key=f"logistic_chat_input_{st.session_state.input_key}", # Unique key for re-render
+            label_visibility="collapsed",
+            placeholder="Ask about logistics..."
+        )
+        # submit_button_col, _ = st.columns([1,3]) # To make button smaller
+        # with submit_button_col:
+        submit_clicked = st.form_submit_button("➤ Send", use_container_width=True)
+
+        if submit_clicked and user_input.strip():
+            process_query(user_input) # This will set is_processing and rerun
+            # user_input is cleared due to clear_on_submit=True
+
+    st.markdown("</div></div>", unsafe_allow_html=True)
+
+    # Add CSS for the fixed input area
+    st.markdown("""
+    <style>
+        .fixed-input-container-wrapper {
+            position: fixed;
+            bottom: 0;
+            right: 0;
+            padding: 15px 25px; /* Adjust padding as needed */
+            background-color: #f0f2f6; /* A light background to distinguish */
+            width: 350px; /* Adjust width of the input area */
+            box-shadow: 0px -2px 10px rgba(0,0,0,0.1); /* Optional shadow */
+            border-top-left-radius: 10px; /* Optional styling */
+            z-index: 999;
+        }
+        .fixed-input-container .stTextInput input {
+            border-radius: 15px !important; /* More rounded input field */
+             border: 1px solid #ccc !important;
+        }
+        .fixed-input-container .stButton button {
+            border-radius: 15px !important;
+            background-color: #1E3A8A !important;
+            color: white !important;
+            width: 100% !important;
+        }
+    </style>
+    """, unsafe_allow_html=True)
+
+# --- Page Implementations ---
+def display_discover_page():
+    """Displays the Discover page content."""
+    st.markdown("<h1 class='sub-header'>Discover Our Logistics AI System</h1>", unsafe_allow_html=True)
+
+    st.markdown("""
+    Welcome to the Logistics Multi-Agent AI System! This platform is designed to revolutionize your logistics operations
+    by providing powerful insights, dynamic optimization, and intelligent assistance. Our suite of specialized AI agents
+    works collaboratively to tackle complex logistical challenges, helping you make data-driven decisions, reduce costs,
+    and improve efficiency.
+    """)
+
+    st.markdown("---")
+    st.markdown("<h2 class='sub-header'>Meet Our Specialist Agents</h2>", unsafe_allow_html=True)
+
+    agents_info = {
+        "supervisor": {"name": "🎓 Supervisor Agent", "desc": "The central coordinator of the AI system. The Supervisor analyzes your queries and routes them to the most appropriate specialist agent or combination of agents to ensure you get the most accurate and relevant response. It manages the workflow and a orchestrates the collaboration between other agents."},
+        "insights_agent": {"name": "📊 Insights Agent", "desc": "Your go-to agent for deep data analysis and trend identification. The Insights Agent processes historical and real-time data to uncover patterns, generate reports, and create visualizations. Ask it about shipment trends, customer behaviors, performance metrics, and more to gain a comprehensive understanding of your operations."},
+        "dynamic_cost_optimizer": {"name": "⚙️ Dynamic Cost Optimizer", "desc": "This agent focuses on real-time cost optimization strategies. It can analyze current conditions, demand forecasts, and resource availability to suggest optimal routing, scheduling, and resource allocation to minimize operational costs dynamically. Ideal for questions about adjusting to changing scenarios."},
+        "static_cost_optimizer": {"name": "💰 Static Cost Optimizer", "desc": "Analyzes cost-saving opportunities based on more stable parameters and strategic changes. Use this agent to explore potential savings from long-term strategies like shipment consolidation, network redesign, pallet utilization policies, or changes in operational rules."},
+        "pallet_utilization_agent": {"name": "📦 Pallet Utilization Agent", "desc": "Specializes in optimizing how pallets are used within your shipments and warehouse. This agent can help analyze pallet fill rates, suggest better packing configurations, calculate costs per pallet, and identify inefficiencies in pallet handling and storage."}
+    }
+
+    for key, info in agents_info.items():
+        icon_html = ""
+        if key in AGENT_MAPPING: # Get icon from existing map
+            agent_map_info = AGENT_MAPPING[key]
+            icon_html = f'<span class="agent-icon {agent_map_info["class"]}" style="font-size: 1.5em; padding: 5px; margin-right:15px;">{agent_map_info["icon"]}</span>'
+
+        st.markdown(f"""
+        <div style="display: flex; align-items: center; margin-bottom: 15px;">
+            {icon_html}
+            <h3 style="margin-bottom:0;">{info['name']}</h3>
+        </div>
+        <p style="margin-left: 55px;">{info['desc']}</p>
+        """, unsafe_allow_html=True)
+        st.markdown("---")
+
+    st.markdown("<h2 class='sub-header'>How to Use the 'Assist' Tab</h2>", unsafe_allow_html=True)
+    st.markdown("""
+    The **Assist** tab is your primary interface for interacting with our AI agents. Here’s how to get the best results:
+    1.  **Ask Clear Questions:** Use the chat input at the bottom right (labeled "logistic chat") to ask specific questions about your logistics operations. The more detail you provide, the better the agents can assist you.
+    2.  **Review Responses:** Agents will provide text-based answers. The Insights Agent may also generate charts and visualizations, which will appear directly in the chat flow.
+    3.  **Code Analysis:** For queries that involve data manipulation or visualization, the "Code Analysis" panel (toggleable from the top right button on the Assist page) will show the Python code generated by the agents. This offers transparency and allows for verification.
+    4.  **Search Conversations:** Use the "Search conversation" bar at the top of the Assist page to quickly find past topics or questions within your current session. (Note: Full historical search is a planned feature).
+    5.  **Clear Conversation:** If you want to start fresh, use the "Clear Conversation" button in the sidebar. This will reset the chat history for the current session.
+
+    Our AI system is continuously learning and improving. We value your feedback to make it even more powerful!
+    """)
+
+
+def display_assist_page():
+    """Displays the Assist page (main chat interface)."""
+
+    # Search bar (placeholder for now, or basic filter)
+    search_query = st.text_input(
+        "Search conversation...",
+        key="search_conversation_input",
+        value=st.session_state.search_query,
+        placeholder="Filter current session chat history..."
+    )
+    if search_query != st.session_state.search_query:
+        st.session_state.search_query = search_query
+        st.rerun() # Rerun to apply filter in display_code_panel and potentially chat history
+
+    st.markdown('<div class="main-content-wrapper">', unsafe_allow_html=True)
+
+    # Stream response handles its own UI updates within containers passed to it.
+    # It will create an expander for agent activity and a main area for chat.
+    if st.session_state.is_processing:
+        stream_response() # This function now manages its own UI containers for steps/progress
+
+    # Display full conversation history (filtered if search_query is active)
+    # This needs to be outside the is_processing block to show history when not processing.
+    chat_history_container = st.container()
+    with chat_history_container:
+        if st.session_state.conversation_pairs:
+            displayed_pairs = 0
+            for i, pair_data in enumerate(reversed(st.session_state.conversation_pairs)): # Show newest first
+                # Unpack pair_data carefully
+                messages_in_pair, charts_in_pair, _ = pair_data # Code snippets not directly shown here
+
+                # Apply search filter to messages in this pair
+                show_pair = True
+                if st.session_state.search_query:
+                    query_lower = st.session_state.search_query.lower()
+                    match_found = False
+                    for msg_content in messages_in_pair:
+                        # msg_content can be a string (user) or dict (agent)
+                        text_to_search = ""
+                        if isinstance(msg_content, dict):
+                            text_to_search = msg_content.get("text", "").lower()
+                        elif isinstance(msg_content, str):
+                            text_to_search = msg_content.lower()
+
+                        if query_lower in text_to_search:
+                            match_found = True
+                            break
+                    if not match_found:
+                        show_pair = False
+
+                if show_pair:
+                    displayed_pairs +=1
+                    st.markdown(f'<div class="conversation-pair">', unsafe_allow_html=True)
+                    # Display Question Number based on original index, not reversed
+                    original_index = len(st.session_state.conversation_pairs) - 1 - i
+                    st.markdown(f'''
+                    <div style="margin-bottom: 15px; border-top: 1px solid #eee; padding-top:10px;">
+                        <span class="question-number">{original_index + 1}</span>
+                        <span style="font-weight: 600; color: #374151;">Interaction {original_index + 1}</span>
+                    </div>
+                    ''', unsafe_allow_html=True)
+
+                    for msg_content in messages_in_pair:
+                        is_user = isinstance(msg_content, dict) and msg_content.get("is_user", False)
+                        display_message(msg_content.get("text") if is_user else msg_content, is_user=is_user)
+
+                    for chart_obj in charts_in_pair:
+                        display_chart(chart_obj)
+
+                    st.markdown('</div>', unsafe_allow_html=True) # End conversation-pair
+
+            if st.session_state.search_query and displayed_pairs == 0:
+                st.markdown('<p style="text-align:center; color: #6B7280; margin-top: 20px;">No conversation turns match your search criteria.</p>', unsafe_allow_html=True)
+        elif not st.session_state.is_processing : # Only show if not empty and not processing
+             st.info("No conversation yet. Ask a question using the 'logistic chat' input below!")
+
+
+    st.markdown('</div>', unsafe_allow_html=True) # End main-content-wrapper
+
+    # The fixed input area for "logistic chat"
+    display_fixed_input_area()
+
 
 def main():
     """Main application function."""
-    display_header()
-    display_sidebar()
-    
-    if st.session_state.code_panel_open:
+    display_header() # Displays main app title and code analysis toggle
+    display_sidebar() # Handles navigation between Discover/Assist
+
+    # Determine main content area vs code panel
+    if st.session_state.active_tab == "Assist" and st.session_state.code_panel_open:
         main_col, panel_col = st.columns([2, 1])
     else:
-        main_col = st.container()
-    
+        main_col = st.container() # Use a single column if panel is closed or not on Assist
+        panel_col = None # No panel column
+
     with main_col:
-        st.markdown('<div class="main-content-wrapper">', unsafe_allow_html=True)
-        
-        # Stream response with real workflow tracking
-        stream_response()
-        
-        # Display conversation history
-        chat_container = st.container()
-        with chat_container:
-            if st.session_state.conversation_pairs:
-                for i, pair in enumerate(st.session_state.conversation_pairs):
-                    messages, charts, code_snippets = pair
-                    with st.container():
-                        st.markdown(f'<div class="conversation-pair">', unsafe_allow_html=True)
-                        st.markdown(f'''
-                        <div style="margin-bottom: 15px;">
-                            <span class="question-number">{i+1}</span>
-                            <span style="font-weight: 600; color: #374151;">Question {i+1}</span>
-                        </div>
-                        ''', unsafe_allow_html=True)
-                        
-                        for msg in messages:
-                            if msg.get("is_user", False):
-                                display_message(msg["text"], is_user=True)
-                            else:
-                                display_message(msg)
-                        
-                        for chart in charts:
-                            display_chart(chart)
-                        
-                        st.markdown('</div>', unsafe_allow_html=True)
-        
-        st.markdown('</div>', unsafe_allow_html=True)
-    
-    if st.session_state.code_panel_open:
+        if st.session_state.active_tab == "Discover":
+            display_discover_page()
+        elif st.session_state.active_tab == "Assist":
+            display_assist_page()
+            # Note: display_fixed_input_area is called within display_assist_page
+            # to ensure it's only shown on the Assist page.
+
+    if panel_col: # If panel_col was created (i.e., on Assist tab and panel is open)
         with panel_col:
+            st.markdown('<div class="right-panel">', unsafe_allow_html=True)
             display_code_panel()
-    
-    display_fixed_input_area()
+            st.markdown('</div>', unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
-
-
-
-
